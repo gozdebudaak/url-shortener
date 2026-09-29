@@ -24,6 +24,7 @@ Requires Docker and uv.
 docker compose up -d db          # start PostgreSQL
 cd backend
 cp .env.example .env             # local settings
+uv run alembic upgrade head      # create/update DB tables
 uv run uvicorn app.main:app --reload
 ```
 
@@ -34,7 +35,7 @@ uv run uvicorn app.main:app --reload
 ## Roadmap
 
 - [x] 1. Backend: FastAPI skeleton + `/healthz`
-- [ ] 2. Backend: PostgreSQL connection + migrations
+- [x] 2. Backend: PostgreSQL connection + migrations
 - [ ] 3. Backend: link shortening and redirect API
 - [ ] 4. Backend: `/metrics` (Prometheus)
 - [ ] 5. Frontend: React UI
