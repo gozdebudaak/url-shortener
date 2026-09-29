@@ -1,10 +1,10 @@
 name: CI
 
 on:
-  push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    push:
+        branches: [ main ]
+    pull_request:
+        branches: [ main ]
 
 jobs:
     backend:
@@ -22,14 +22,14 @@ jobs:
                 ports:
                     - 5432:5432
                 options: >-
-                    --health-cmd pg_isready -U app -d urlshortener
+                    --health-cmd "pg_isready -U app -d urlshortener"
                     --health-interval 5s
                     --health-timeout 3s
                     --health-retries 5
 
         steps:
             - uses: actions/checkout@v7
-            - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4
+            - uses: astral-sh/setup-uv@bec219d24cd3e171d82865faccec33120bb574f4 # v10.1.0
               with:
                 version: '0.12.13'
                 cache-dependency-glob: 'backend/uv.lock'
@@ -37,5 +37,4 @@ jobs:
             - run: uv sync --locked
             - run: uv run ruff check .
             - run: uv run ruff format --check .
-            - run: uv run pytest
-            
+            - run: uv run pytest   
