@@ -1,3 +1,4 @@
+# Local development only. Credentials here are not secrets.
 services:
   db:
     image: postgres:17-alpine
@@ -14,6 +15,37 @@ services:
       interval: 5s
       timeout: 3s
       retries: 5
-
+  backend:
+    build: ./backend
+    image: urlshortener-backend:dev
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@db:5432/urlshortener
+    depends_on:
+      migration:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/readyz')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+  migration:
+    build: ./backend
+    image: urlshortener-backend:dev
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      DATABASE_URL: postgresql+psycopg://app:app@db:5432/urlshortener
+    depends_on:
+      db:
+        condition: service_healthy
+  frontend:
+    build: ./frontend
+    ports:
+      - "8080:8080"
+    environment:
+      BACKEND_URL: http://backend:8000
+    depends_on:
+      backend:
+        condition: service_healthy
 volumes:
   pgdata:
