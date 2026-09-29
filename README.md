@@ -1,5 +1,7 @@
 # URL Shortener
 
+[![CI](https://github.com/gozdebudaak/url-shortener/actions/workflows/ci.yml/badge.svg)](https://github.com/gozdebudaak/url-shortener/actions/workflows/ci.yml)
+
 A simple web app that shortens long links and counts clicks.
 Main goal: practice automated deployment with Docker, Kubernetes, Helm, and AWS.
 
@@ -23,6 +25,7 @@ Only the frontend is exposed. The backend is reachable only from inside the Dock
 | `backend/` | FastAPI application (Python, uv) and its `Dockerfile` |
 | `frontend/` | React + Vite UI, nginx config template, and its `Dockerfile` |
 | `compose.yaml` | Full local stack: db, migration, backend, frontend |
+| `.github/workflows/ci.yml` | CI pipeline (GitHub Actions) |
 
 ## Running with Docker Compose
 
@@ -114,6 +117,32 @@ uv run pytest
 uv run ruff check . && uv run ruff format --check .
 ```
 
+## CI
+
+Runs on every push to `main` and on pull requests to `main`
+([`.github/workflows/ci.yml`](.github/workflows/ci.yml)).
+
+```
+ backend  ──┐
+ (lint,     │
+  tests)    ├──> images (backend)    ─ docker build
+            │    images (frontend)   ─ docker build
+ frontend ──┘
+ (npm build)
+```
+
+| Job | Steps | Notes |
+|---|---|---|
+| `backend` | `uv sync --locked`, `ruff check`, `ruff format --check`, `pytest` | Tests run against a PostgreSQL service container |
+| `frontend` | `npm ci`, `npm run build` | Node version comes from `frontend/.nvmrc` |
+| `images` | Build both Docker images (matrix: `backend`, `frontend`) | Runs only if both jobs above pass. Not pushed yet. |
+
+- `backend` and `frontend` run in parallel. The two `images` jobs also run in parallel.
+- Images are tagged with the commit SHA (`url-shortener-<service>:<sha>`), never `latest`.
+- Docker layers are cached in the GitHub Actions cache (one scope per image).
+  With a warm cache, an image build takes seconds instead of ~30s.
+- uv and npm downloads are cached too.
+
 ## Roadmap
 
 - [x] 1. Backend: FastAPI skeleton + `/healthz`
@@ -121,7 +150,7 @@ uv run ruff check . && uv run ruff format --check .
 - [x] 3. Backend: link shortening and redirect API
 - [x] 4. Frontend: React UI
 - [x] 5. Local setup: Dockerfiles + docker-compose
-- [ ] 6. Push to GitHub + CI (tests, lint, image build)
+- [x] 6. Push to GitHub + CI (tests, lint, image build)
 - [ ] 7. Kubernetes manifests → Helm chart
 - [ ] 8. AWS: ECR, EKS, RDS
 - [ ] 9. CD: automated deployment
