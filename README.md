@@ -32,15 +32,34 @@ uv run uvicorn app.main:app --reload
 - Readiness (checks DB): http://localhost:8000/readyz
 - API docs: http://localhost:8000/docs
 
+## API
+
+| Method | Path | Description |
+|---|---|---|
+| `POST` | `/api/links` | Create a short link. Body: `{"target_url": "https://..."}` |
+| `GET` | `/api/links?limit=50` | List links, newest first (max 100) |
+| `GET` | `/r/{code}` | Redirect to the target URL (307) and count the click |
+
+## Tests and lint
+
+Tests run against a separate `urlshortener_test` database (created automatically).
+Override it with `TEST_DATABASE_URL`.
+
+```bash
+cd backend
+uv run pytest
+uv run ruff check . && uv run ruff format --check .
+```
+
 ## Roadmap
 
 - [x] 1. Backend: FastAPI skeleton + `/healthz`
 - [x] 2. Backend: PostgreSQL connection + migrations
-- [ ] 3. Backend: link shortening and redirect API
-- [ ] 4. Backend: `/metrics` (Prometheus)
-- [ ] 5. Frontend: React UI
-- [ ] 6. Local setup: Dockerfiles + docker-compose
-- [ ] 7. Push to GitHub + CI (tests, lint, image build)
-- [ ] 8. Kubernetes manifests → Helm chart
-- [ ] 9. AWS: ECR, EKS, RDS
-- [ ] 10. CD: automated deployment
+- [x] 3. Backend: link shortening and redirect API
+- [ ] 4. Frontend: React UI
+- [ ] 5. Local setup: Dockerfiles + docker-compose
+- [ ] 6. Push to GitHub + CI (tests, lint, image build)
+- [ ] 7. Kubernetes manifests → Helm chart
+- [ ] 8. AWS: ECR, EKS, RDS
+- [ ] 9. CD: automated deployment
+- [ ] 10. Observability: `/metrics` (Prometheus) + Grafana

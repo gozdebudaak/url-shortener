@@ -2,8 +2,10 @@ from fastapi import FastAPI, Response, status
 from sqlalchemy import text
 
 from app.db import engine
+from app.links import router as links_router
 
 app = FastAPI(title="URL Shortener")
+app.include_router(links_router)
 
 
 @app.get("/healthz")
