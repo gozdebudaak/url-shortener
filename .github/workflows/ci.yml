@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+    backend:
+        runs-on: ubuntu-latest
+        defaults:
+            run:
+                working-directory: backend
+        services:
+            postgres:
+                image: postgres:17-alpine
+                env:
+                    POSTGRES_USER: app
+                    POSTGRES_PASSWORD: app
+                    POSTGRES_DB: urlshortener
+                ports:
+                    - 5432:5432
+                options: >-
+                    --health-cmd pg_isready -U app -d urlshortener
+                    --health-interval 5s
+                    --health-timeout 3s
+                    --health-retries 5
+
+        steps:
+            - uses: actions/checkout@v7
+            - uses: astral-sh/setup-uv@0.12.13
+              with:
+                cache-dependency-glob: 'backend/uv.lock'
+                enable-cache: true
+            - run: uv sync --locked
+            - run: uv run ruff check .
+            - run: uv run ruff format --check .
+            - run: uv run pytest
+            
