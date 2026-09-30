@@ -18,8 +18,8 @@ COPY alembic.ini /app/alembic.ini
 
 ENV PATH="/app/.venv/bin:$PATH"
 
-RUN useradd --system --no-create-home appuser
-USER appuser
+RUN useradd --system --uid 10001 --no-create-home appuser
+USER 10001
 
 EXPOSE 8000
 
