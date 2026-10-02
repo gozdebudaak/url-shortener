@@ -7,16 +7,55 @@ Main goal: practice automated deployment with Docker, Kubernetes, Helm, and AWS.
 
 ## Architecture
 
-```
-                    ┌──────────────────────────────┐
-Browser ──:8080──>  │ frontend (nginx)             │
-                    │  /        -> static React app│
-                    │  /api, /r -> backend:8000     │──> backend (FastAPI) ──> PostgreSQL
-                    └──────────────────────────────┘
+### Runtime
+
+```mermaid
+flowchart LR
+    user(["Browser"])
+
+    subgraph app["Kubernetes namespace (or Docker network)"]
+        fe["frontend<br/>nginx :8080<br/>serves the React app"]
+        be["backend<br/>FastAPI :8000"]
+        mig["migration Job<br/>alembic upgrade head"]
+    end
+
+    db[("PostgreSQL<br/>RDS on AWS")]
+
+    user -->|"HTTP"| fe
+    fe -->|"/api, /r"| be
+    be --> db
+    mig -.->|"before each deploy"| db
 ```
 
-Only the frontend is exposed. The backend is reachable only from inside the Docker network
-(in Kubernetes: a ClusterIP Service).
+- Only the frontend is exposed. nginx serves the static React app and forwards `/api` and `/r` to the backend.
+- The backend is internal only (a ClusterIP Service in Kubernetes, no published port in Compose).
+- The backend is stateless, so it can run several replicas. All state lives in PostgreSQL.
+- Schema migrations run as a separate Job (a Helm `pre-install`/`pre-upgrade` hook) with the backend image.
+  If they fail, the running version is left untouched.
+
+### Delivery
+
+```mermaid
+flowchart LR
+    push["git push / PR"] --> be["backend job<br/>ruff + pytest"]
+    push --> fe["frontend job<br/>npm ci + build"]
+    be --> img["images job<br/>build both images<br/>tag = commit SHA"]
+    fe --> img
+    img -.-> ecr[("Amazon ECR")]
+    ecr -.-> helm["helm upgrade<br/>migration hook first"]
+    helm -.-> eks["Amazon EKS"]
+```
+
+Solid arrows run today in GitHub Actions. Dashed arrows are the planned CD steps (see the roadmap).
+
+### Environments
+
+| | Frontend reached via | Database | Infrastructure |
+|---|---|---|---|
+| Local dev | Vite dev server `:5173` | PostgreSQL in Docker | — |
+| Docker Compose | `localhost:8080` | PostgreSQL container + volume | `compose.yaml` |
+| Kubernetes (local) | `kubectl port-forward` | `k8s/dev/postgres.yaml` | Helm chart |
+| AWS (in progress) | ALB via Ingress | Amazon RDS | Terraform + Helm chart |
 
 ## Project structure
 
