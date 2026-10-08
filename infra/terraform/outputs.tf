@@ -22,3 +22,14 @@ output "kubeconfig_command" {
   description = "Command to configure kubectl for the EKS cluster"
   value       = "aws eks update-kubeconfig --name ${aws_eks_cluster.this.name} --region ${var.region} --alias url-shortener-eks"
 }
+
+output "rds_address" {
+  description = "RDS instance address"
+  value       = aws_db_instance.this.address
+}
+
+output "database_url" {
+  description = "Database URL for the RDS instance"
+  sensitive   = true
+  value       = "postgresql+psycopg://${aws_db_instance.this.username}:${random_password.db.result}@${aws_db_instance.this.address}:${aws_db_instance.this.port}/${aws_db_instance.this.db_name}"
+}
